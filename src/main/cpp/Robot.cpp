@@ -4,19 +4,16 @@
 
 #include "Robot.h"
 #include "Constants/TeleopConstants.h"
-#include "Constants/IntakeConstants.h"
 
 #include "AprilTagBasedSwerve.h"
 #include "Autonomous Functionality/SwerveDriveAutoControl.h"
 
-#include "Intake.h"
-#include "FlyWheel.h"
+#include <fmt/core.h>
+#include <frc/smartdashboard/SmartDashboard.h>
 
 AprilTagSwerve swerveDrive{};
 XboxController xboxController{0};
 XboxController xboxController2{1};
-Intake overbumper{};
-FlywheelSystem flywheel{overbumper.GetFeedMotor()};
 
 SwerveDriveAutonomousController swerveAutoController{&swerveDrive};
 
@@ -25,9 +22,7 @@ void Robot::RobotInit()
   m_chooser.SetDefaultOption(kAutoNameDefault, kAutoNameDefault);
   m_chooser.AddOption(kAutoNameCustom, kAutoNameCustom);
   frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
-  SmartDashboard::PutNumber("Start Flywheel Speed", 0);
 }
-
 
 /**
  * This function is called every 20 ms, no matter the mode. Use
@@ -93,10 +88,10 @@ void Robot::TeleopPeriodic()
 
   /* DEBUGGING INFO */
 
-  SmartDashboard::PutNumber("FL Module Heading", swerveDrive.FLModule.GetMagEncoderValue());
-  SmartDashboard::PutNumber("FR Module Heading", swerveDrive.FRModule.GetMagEncoderValue());
-  SmartDashboard::PutNumber("BL Module Heading", swerveDrive.BLModule.GetMagEncoderValue());
-  SmartDashboard::PutNumber("BR Module Heading", swerveDrive.BRModule.GetMagEncoderValue());
+  SmartDashboard::PutNumber("FL Module Heading", swerveDrive.FLModule.GetModuleHeading());
+  SmartDashboard::PutNumber("FR Module Heading", swerveDrive.FRModule.GetModuleHeading());
+  SmartDashboard::PutNumber("BL Module Heading", swerveDrive.BLModule.GetModuleHeading());
+  SmartDashboard::PutNumber("BR Module Heading", swerveDrive.BRModule.GetModuleHeading());
 
   SmartDashboard::PutNumber("Odometry X Position", swerveDrive.GetOdometryPose().X().value());
   SmartDashboard::PutNumber("Odometry Y Position", swerveDrive.GetOdometryPose().Y().value());
@@ -159,39 +154,6 @@ void Robot::TeleopPeriodic()
   {
     swerveAutoController.FollowTrajectory(PoseEstimationType::PureOdometry);
   }
-
-  if(xboxController.GetRightBumper()){
-    overbumper.IntakeRing();
-    overbumper.PIDWristDown();
-  }
-  else if(xboxController.GetLeftBumper()){
-    overbumper.OuttakeRing();
-    overbumper.PIDWristUp();
-  }
-  else {
-    if(!flywheel.CurrentlyFeeding){overbumper.SetIntakeMotorSpeed(0);} //REMOVE THE IF WHEN INDEXER IS ON SEPERATE MOTOR
-    //overbumper.SetIntakeMotorSpeed(0);
-    overbumper.PIDWristUp();
-  }
-
-  SmartDashboard::PutNumber("Wrist Pos", overbumper.GetWristEncoderReading());
-  
-  if(xboxController.GetXButtonPressed()){
-    flywheel.SimpleSetFlywheelMotor(0);
-  }
-  else if (xboxController.GetYButtonPressed()){
-    flywheel.SetFlywheelVelocity(2000);
-  }
-  else if (xboxController.GetBackButton()){
-    flywheel.FlywheelRing(&overbumper.m_rangeFinder);
-  }
-  else if (xboxController.GetStartButtonPressed()){
-    flywheel.SetFlywheelVelocity(SmartDashboard::GetNumber("Start Flywheel Speed", 0));
-  }
-
-  SmartDashboard::PutNumber("Top FlyWheel RPM", flywheel.TopFlywheel.GetMeasurement());
-  SmartDashboard::PutNumber("Top FlyWheel Setpoint", flywheel.TopFlywheel.m_shooterPID.GetSetpoint());
-    
 }
 
 void Robot::DisabledInit() {}
